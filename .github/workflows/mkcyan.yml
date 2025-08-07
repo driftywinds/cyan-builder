@@ -1,0 +1,69 @@
+name: Generate Cyan File
+
+on:
+  workflow_dispatch:
+    inputs:
+      deb_url:
+        description: 'Direct link to the .deb tweak file'
+        required: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip python3-venv curl unzip
+
+      - name: Install pipx
+        run: |
+          python3 -m pip install --user pipx
+          python3 -m pipx ensurepath
+        env:
+          PIPX_HOME: ~/.local/pipx
+          PIPX_BIN_DIR: ~/.local/bin
+
+      - name: Add pipx to PATH
+        run: echo "${HOME}/.local/bin" >> $GITHUB_PATH
+
+      - name: Install cgen (via cyan package)
+        run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
+
+      - name: Download .deb file
+        run: |
+          curl -L "${{ github.event.inputs.deb_url }}" -o tweak.deb
+
+      - name: Extract base name of tweak file
+        id: name
+        run: |
+          filename=$(basename "${{ github.event.inputs.deb_url }}")
+          name="${filename%.deb}"
+          echo "name=$name" >> $GITHUB_OUTPUT
+
+      - name: Generate .cyan file
+        run: |
+          cgen -f tweak.deb -uwsgq -o "${{ steps.name.outputs.name }}.cyan"
+
+      - name: Create draft release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: cyan-from-${{ steps.name.outputs.name }}
+          name: Cyan File for ${{ steps.name.outputs.name }}
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}  # See note below
+
+      - name: Upload .cyan file to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: cyan-from-${{ steps.name.outputs.name }}
+          files: ${{ steps.name.outputs.name }}.cyan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
