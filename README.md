@@ -9,4 +9,5 @@ How to use: -
 3)  provide direct file links of the tweak to make the cyan file from the first workflow in Actions
 4)  then the cyan + decrypted IPA in the second workflow
 5)  run the workflow(s)
-6)  profit
+6)  go to the releases tab of the repo
+7)  profit
