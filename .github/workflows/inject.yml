@@ -34,32 +34,23 @@ jobs:
       - name: Add pipx to PATH
         run: echo "${HOME}/.local/bin" >> $GITHUB_PATH
 
-      - name: Install or update Cyan
+      - name: Install cyan
         run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
 
-      - name: Download IPA and .cyan file
+      - name: Download IPA and Cyan tweak file
         run: |
           curl -L "${{ github.event.inputs.ipa_url }}" -o app.ipa
           curl -L "${{ github.event.inputs.cyan_url }}" -o tweak.cyan
 
-      - name: Inject tweak using Cyan
+      - name: Inject tweak into IPA
         run: cyan -i app.ipa -z tweak.cyan -o output.ipa
 
-      - name: Create draft release (if not exists)
-        id: create_release
-        uses: softprops/action-gh-release@v2
+      - name: Create draft release with injected IPA
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: injected-ipa-${{ github.run_number }}
+          tag: injected-ipa-${{ github.run_number }}
           name: Injected IPA ${{ github.run_number }}
           draft: true
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
-      - name: Upload output.ipa to release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: injected-ipa-${{ github.run_number }}
-          files: output.ipa
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          artifacts: output.ipa
+          token: ${{ secrets.GH_TOKEN }}
