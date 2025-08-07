@@ -1,4 +1,4 @@
-name: Generate Cyan File
+name: Generate Cyan File from Deb
 
 on:
   workflow_dispatch:
@@ -31,39 +31,30 @@ jobs:
       - name: Add pipx to PATH
         run: echo "${HOME}/.local/bin" >> $GITHUB_PATH
 
-      - name: Install cgen (via cyan package)
+      - name: Install cgen (via cyan)
         run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
 
-      - name: Download .deb file
+      - name: Download .deb tweak file
         run: |
           curl -L "${{ github.event.inputs.deb_url }}" -o tweak.deb
 
-      - name: Extract base name of tweak file
-        id: name
+      - name: Extract tweak name from URL
+        id: extract_name
         run: |
           filename=$(basename "${{ github.event.inputs.deb_url }}")
-          name="${filename%.deb}"
-          echo "name=$name" >> $GITHUB_OUTPUT
+          tweakname="${filename%.deb}"
+          echo "name=$tweakname" >> $GITHUB_OUTPUT
 
-      - name: Generate .cyan file
+      - name: Generate .cyan file using cgen
         run: |
-          cgen -f tweak.deb -uwsgq -o "${{ steps.name.outputs.name }}.cyan"
+          cgen -f tweak.deb -uwsgq -o "${{ steps.extract_name.outputs.name }}.cyan"
 
-      - name: Create draft release
-        id: create_release
-        uses: softprops/action-gh-release@v2
+      - name: Create draft release with cyan file
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: cyan-from-${{ steps.name.outputs.name }}
-          name: Cyan File for ${{ steps.name.outputs.name }}
+          tag: cyan-from-${{ steps.extract_name.outputs.name }}
+          name: Cyan File for ${{ steps.extract_name.outputs.name }}
           draft: true
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}  # See note below
-
-      - name: Upload .cyan file to release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: cyan-from-${{ steps.name.outputs.name }}
-          files: ${{ steps.name.outputs.name }}.cyan
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          artifacts: ${{ steps.extract_name.outputs.name }}.cyan
+          token: ${{ secrets.GH_TOKEN }}
