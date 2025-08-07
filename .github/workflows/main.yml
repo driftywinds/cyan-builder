@@ -1,0 +1,65 @@
+name: Inject IPA with Cyan
+
+on:
+  workflow_dispatch:
+    inputs:
+      ipa_url:
+        description: 'Direct link to the IPA file'
+        required: true
+      cyan_url:
+        description: 'Direct link to the .cyan tweak file'
+        required: true
+
+jobs:
+  inject:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip python3-venv curl unzip
+
+      - name: Install pipx
+        run: |
+          python3 -m pip install --user pipx
+          python3 -m pipx ensurepath
+        env:
+          PIPX_HOME: ~/.local/pipx
+          PIPX_BIN_DIR: ~/.local/bin
+
+      - name: Add pipx to PATH
+        run: echo "${HOME}/.local/bin" >> $GITHUB_PATH
+
+      - name: Install or update Cyan
+        run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
+
+      - name: Download IPA and .cyan file
+        run: |
+          curl -L "${{ github.event.inputs.ipa_url }}" -o app.ipa
+          curl -L "${{ github.event.inputs.cyan_url }}" -o tweak.cyan
+
+      - name: Inject tweak using Cyan
+        run: cyan -i app.ipa -z tweak.cyan -o output.ipa
+
+      - name: Create draft release (if not exists)
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: injected-ipa-${{ github.run_number }}
+          name: Injected IPA ${{ github.run_number }}
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload output.ipa to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: injected-ipa-${{ github.run_number }}
+          files: output.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
