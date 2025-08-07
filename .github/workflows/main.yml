@@ -54,7 +54,7 @@ jobs:
           draft: true
           prerelease: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Upload output.ipa to release
         uses: softprops/action-gh-release@v2
@@ -62,4 +62,4 @@ jobs:
           tag_name: injected-ipa-${{ github.run_number }}
           files: output.ipa
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
