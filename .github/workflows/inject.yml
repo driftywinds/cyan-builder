@@ -74,4 +74,4 @@ jobs:
           draft: true
           prerelease: false
           artifacts: output.ipa
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
